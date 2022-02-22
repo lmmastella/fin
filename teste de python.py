@@ -87,11 +87,6 @@ cadastro = pd.read_csv('cadastro.csv').set_index('CNPJ_FUNDO')
 informes = pd.read_csv('informes.csv')
 
 
-# %% Teste de pandas_profiling
-
-# pp.ProfileReport(informes)
-# pp.ProfileReport(cadastro)
-
 # %% Dados do cnpj a pesquisar
 
 
