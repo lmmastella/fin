@@ -204,6 +204,50 @@ def consulta_cvm_informes(data_inicio, data_fim):
     return informe_completo
 
 
+# funcao  busca informes mensais na CVM acrescido dos dados de 2021
+
+def consulta_cvm_informes_upgrade(data_inicio, data_fim):
+    """
+
+    Parameters
+    ----------
+    data_inicio : data
+                  YYYY-MM
+
+    data_fim : data
+                  YYYY-MM
+
+    Returns
+    -------
+    Pandas DataFrame com as informacoes mensais de rendimento dos fundos
+    no periodo solitado
+
+    """
+
+    # datas de solicitacao dos arquivos
+    datas = pd.date_range(data_inicio, data_fim, freq="MS")
+
+    informe_completo = pd.DataFrame()
+    for data in datas:
+        try:
+            url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.csv".format(
+                data.year, data.month)
+            informe_mensal = pd.read_csv(url, sep=";")
+
+        except:
+            print("Arquivo {} não encontrado!".format(url))
+            print("Forneça outra data!")
+
+        informe_completo = pd.concat(
+            [informe_completo, informe_mensal], ignore_index=True)
+
+    informes_2021 = pd.read_csv('informes_2021.csv').drop('Unnamed: 0', axis=1)
+    informe_upgrade = pd.concat(
+        [informes_2021, informe_completo], ignore_index=True)
+
+    return informe_upgrade
+
+
 # funcao dataset com informes mensais da cvm
 
 
@@ -313,8 +357,8 @@ def retorno_diario_df_valores(df, data_inicio, data_fim):
 
     """
     # tratamento das datas incluido o mes anterior para calculo de retornos
-    data_inicial = pd.to_datetime(data_inicio,
-                                  format="%Y/%m/%d") - pd.DateOffset(days=1)
+    data_inicial = pd.to_datetime(data_inicio) - pd.DateOffset(days=1)
+    data_inicial = data_inicial.strftime("%Y-%m-%d")
     df = df.loc[data_inicial:data_fim]
 
     # Calculate daily returns
@@ -356,8 +400,8 @@ def retorno_diario_df_pct(df, data_inicio, data_fim):
 
     """
     # tratamento das datas incluido o mes anterior para calculo de retornos
-    data_inicial = pd.to_datetime(data_inicio,
-                                  format="%Y/%m/%d") - pd.DateOffset(days=1)
+    data_inicial = pd.to_datetime(data_inicio) - pd.DateOffset(days=1)
+    data_inicial = data_inicial.strftime("%Y-%m-%d")
     df = df.loc[data_inicial:data_fim]
 
     # Calculate daily returns
@@ -400,8 +444,8 @@ def retorno_mensal_df_valores(df, data_inicio, data_fim):
     """
 
     # tratamento das datas incluido o mes anterior para calculo de retornos
-    data_inicial = pd.to_datetime(data_inicio,
-                                  format="%Y/%m/%d") - pd.DateOffset(days=1)
+    data_inicial = pd.to_datetime(data_inicio) - pd.DateOffset(days=1)
+    data_inicial = data_inicial.strftime("%Y-%m-%d")
     df = df.loc[data_inicial:data_fim]
 
     # Calculate monthly returns
@@ -410,12 +454,12 @@ def retorno_mensal_df_valores(df, data_inicio, data_fim):
     # Calculate monthly cumulative returns
     ret_mensal_acum = (1 + ret_mensal).cumprod() - 1
 
-    ret_mensal = round(ret_mensal * 100, 2)
-    ret_mensal_acum = round(ret_mensal_acum * 100, 2)
+    ret_mensal = round(ret_mensal * 100, 2)[data_inicio:data_fim]
+    ret_mensal_acum = round(ret_mensal_acum * 100, 2)[data_inicio:data_fim]
 
     # define data de retorno dos df
-    ret_mensal = ret_mensal[data_inicio:data_fim]
-    ret_mensal_acum = ret_mensal_acum[data_inicio:data_fim]
+    ret_mensal.index = ret_mensal.index.strftime('%Y-%m')
+    ret_mensal_acum.index = ret_mensal_acum.index.strftime('%Y-%m')
 
     return ret_mensal, ret_mensal_acum
 
@@ -449,8 +493,8 @@ def retorno_mensal_df_pct(df, data_inicio, data_fim):
     """
 
     # tratamento das datas incluido o mes anterior para calculo de retornos
-    data_inicial = pd.to_datetime(data_inicio,
-                                  format="%Y/%m/%d") - pd.DateOffset(days=1)
+    data_inicial = pd.to_datetime(data_inicio) - pd.DateOffset(days=1)
+    data_inicial = data_inicial.strftime("%Y-%m-%d")
     df = df.loc[data_inicial:data_fim]
 
     # Calculate monthly returns
@@ -460,12 +504,12 @@ def retorno_mensal_df_pct(df, data_inicio, data_fim):
     # Calculate monthly cumulative returns
     ret_mensal_acum = (1 + ret_mensal).cumprod() - 1
 
-    ret_mensal = round(ret_mensal * 100, 2)
-    ret_mensal_acum = round(ret_mensal_acum * 100, 2)
+    ret_mensal = round(ret_mensal * 100, 2)[data_inicio:data_fim]
+    ret_mensal_acum = round(ret_mensal_acum * 100, 2)[data_inicio:data_fim]
 
     # define data de retorno dos df
-    ret_mensal = ret_mensal[data_inicio:data_fim]
-    ret_mensal_acum = ret_mensal_acum[data_inicio:data_fim]
+    ret_mensal.index = ret_mensal.index.strftime('%Y-%m')
+    ret_mensal_acum.index = ret_mensal_acum.index.strftime('%Y-%m')
 
     return ret_mensal, ret_mensal_acum
 
@@ -624,14 +668,6 @@ def plot_retorno_mensal(df, nome):
     traces = [go.Scatter(x=df.index, y=df[fundo], name=fundo)
               for fundo in fundos]
 
-    # fig.add_trace(go.Scatter(x=df.index, y=df['CDI'], name='CDI',
-    #                          line=dict(color='black', width=3)))
-
-    # fig.add_trace(go.Scatter(x=df.index, y=df['Ibov'], name='Ibovespa',
-    #                          line=dict(color='red', width=3)))
-
-    # fig.add_trace(go.Scatter(x=df.index, y=df["Dolar"], name="Dolar",
-    #                          line=dict(color="blue", width=3)))
 
     fig.add_traces(traces)
     fig.update_layout(
@@ -651,7 +687,7 @@ def plot_retorno_mensal(df, nome):
 # Opcao 1
 today = datetime.today().strftime("%Y-%m-%d")
 data_inicio = "2021-01-01"
-data_fim = "2022-01-31"
+data_fim = "2022-02-28"
 
 # Opcao 2
 # ano = "2021"
@@ -668,14 +704,14 @@ cadastro = consulta_cvm_cadastro()
 
 informes = consulta_cvm_informes(data_inicio, data_fim)
 # informes.to_csv('informes.csv')
-# informes = pd.read_csv('informes.csv')
+# informes = pd.read_csv('informes.csv').drop('Unnamed: 0', axis=1)
 
 # %% Opcao 2
 # # consulta informe de fundos em determinado mes na cvm com valores de cotas
 
 # informes = consulta_cvm_informes_mes(2021, 12)
 # informes.to_csv('informes.csv')
-# informes = pd.read_csv('informes.csv')
+# informes = pd.read_csv('informes.csv').drop('Unnamed: 0', axis=1)
 
 # %% consulta dados da bolsa
 
@@ -683,9 +719,6 @@ ativos = ['^BVSP', '^DJI', '^GSPC']
 acoes_diario = consulta_yahoo(ativos, data_inicio, data_fim)
 acoes_diario.columns = ['Ibov', 'DowJones', 'S&P500']
 
-acoes = acoes_diario.reset_index()
-# acoes_diario.to_csv('acoes_diario.csv')
-# acoes_diario = pd.read_csv('acoes_diario.csv').set_index('data')
 
 # %% Calculate daily returns
 
@@ -697,8 +730,6 @@ acoes_ret_diario, acoes_ret_diario_acum = retorno_diario_df_valores(
 acoes_ret_mensal, acoes_ret_mensal_acum = retorno_mensal_df_valores(
     acoes_diario, data_inicio, data_fim)
 
-# acoes_ret_mensalT = acoes_ret_mensal.T
-# acoes_ret_mensal_acumT = acoes_ret_mensal_acum.T
 
 # %% consulta dados do dolar comercial
 
@@ -706,8 +737,6 @@ acoes_ret_mensal, acoes_ret_mensal_acum = retorno_mensal_df_valores(
 dolar_diario = consulta_bcb(1, data_inicio, data_fim)
 dolar_diario.columns = ['Dolar']
 
-# dolar_diario.to_csv('dolar_diario.csv')
-# dolar_diario = pd.read_csv('dolar_diario.csv').set_index('data')
 
 # %% Calculate daily returns
 
@@ -719,9 +748,6 @@ dolar_ret_diario, dolar_ret_diario_acum = retorno_diario_df_valores(
 dolar_ret_mensal, dolar_ret_mensal_acum = retorno_mensal_df_valores(
     dolar_diario, data_inicio, data_fim)
 
-# dolar_ret_mensalT = dolar_ret_mensal.T
-# dolar_ret_mensal_acumT = dolar_ret_mensal_acum.T
-
 
 # %% consulta cdi e calcula acumulado
 
@@ -729,8 +755,6 @@ dolar_ret_mensal, dolar_ret_mensal_acum = retorno_mensal_df_valores(
 cdi_diario = consulta_bcb(12, data_inicio, data_fim)
 cdi_diario.columns = ['CDI']
 
-# cdi_diario.to_csv('cdi_diario.csv')
-# cdi_diario = pd.read_csv('cdi_diario.csv')
 
 # %% Calculate daily returns
 
@@ -744,9 +768,6 @@ cdi_ret_diario, cdi_ret_diario_acum = retorno_diario_df_pct(
 cdi_ret_mensal, cdi_ret_mensal_acum = retorno_mensal_df_pct(
     cdi_diario, data_inicio, data_fim)
 
-# cdi_ret_mensalT = cdi_ret_mensal.T
-# cdi_ret_mensal_acumT = cdi_ret_mensal_acum.T
-
 
 # %% consulta ipca mensal e calcula acumulado
 
@@ -754,9 +775,8 @@ cdi_ret_mensal, cdi_ret_mensal_acum = retorno_mensal_df_pct(
 ipca_diario = consulta_bcb(433, data_inicio, data_fim)
 ipca_diario.columns = ['IPCA']
 ipca_ret_mensal = ipca_diario[data_inicio:data_fim].resample('M').last()
+ipca_ret_mensal.index = ipca_ret_mensal.index.strftime('%Y-%m')
 
-# ipca_diario.to_csv('ipca_diario.csv')
-# ipca_diario = pd.read_csv('ipca_diario.csv')
 
 
 # %% Calculate monthly returns
@@ -765,8 +785,6 @@ ipca_ret_mensal = ipca_diario[data_inicio:data_fim].resample('M').last()
 ipca_ret_mensal_acum = round(
     ((1 + ipca_ret_mensal / 100).cumprod() - 1) * 100, 2)
 
-# ipca_ret_mensalT = ipca_ret_mensal.T
-# ipca_ret_mensal_acumT = ipca_ret_mensal_acum.T
 
 
 # %% meus fundos bb e itau
@@ -822,11 +840,6 @@ itau_ret_diario, itau_ret_diario_acum = retorno_diario_df_valores(
 itau_ret_mensal, itau_ret_mensal_acum = retorno_mensal_df_valores(
     itau_diario, data_inicio, data_fim)
 
-# itau_ret_mensalT = itau_ret_mensal.T
-# itau_ret_mensal_acumT = itau_ret_mensal_acum.T
-# itau_ret_mensal.to_csv('itau_ret_mensalT.csv')
-# itau_ret_mensal_acum.to_csv('itau_ret_mensal_acumT.csv')
-
 
 # BB
 # %% Calculate daily returns
@@ -839,10 +852,6 @@ bb_ret_diario, bb_ret_diario_acum = retorno_diario_df_valores(
 bb_ret_mensal, bb_ret_mensal_acum = retorno_mensal_df_valores(
     bb_diario, data_inicio, data_fim)
 
-# bb_ret_mensalT = bb_ret_mensal.T
-# bb_ret_mensal_acumT = bb_ret_mensal_acum.T
-# bb_ret_mensal.to_csv('bb_ret_mensalT.csv')
-# bb_ret_mensal_acum.to_csv('bb_ret_mensal_acumT.csv')
 
 # %% consulta fundos totais
 
@@ -876,8 +885,6 @@ indices_ret_diarios = indices_ret_diarios.fillna(
     axis=0, method='bfill').dropna()
 
 plot_retorno_diario(indices_ret_diarios, "diarios")
-# indices_ret_diarios.Ibov.describe()
-# indices_ret_diarios.Dolar.describe()
 
 
 # %% indices de retornos diarios acumulados plot
@@ -899,14 +906,7 @@ plot_retorno_diario(indices_ret_diarios_acum, "diarios acumulados")
 fig = plt.subplots(figsize=(11, 11))
 sns.heatmap(
     valores_diarios.corr(), annot=True, fmt=".2f", annot_kws={"fontsize": 9})
-
-
-# %% correlacoes indices diarios sem correlacao
-
-
-fig = plt.subplots(figsize=(11, 11))
-sns.heatmap(
-    indices_ret_diarios.corr(), annot=True, fmt=".2f", annot_kws={"fontsize": 9})
+plt.savefig("corr_diario.png")
 
 
 # %% correlacoes indices diarios acumulados
@@ -915,7 +915,7 @@ sns.heatmap(
 fig = plt.subplots(figsize=(11, 11))
 sns.heatmap(
     indices_ret_diarios_acum.corr(), annot=True, fmt=".2f", annot_kws={"fontsize": 9})
-
+plt.savefig("corr_acum.png")
 
 # %%  gerar dataset com indicadores financeiros mensal
 
@@ -942,7 +942,6 @@ itau_retorno_mensal = pd.concat([itau_ret_mensal,
                                  fin_retorno_mensal], axis=1)
 
 plot_retorno_mensal(itau_retorno_mensal, "Itau Mensal")
-# itau_retorno_mensal.T.to_csv('itau_retorno_mensal.csv')
 
 
 # %% graficos do itau mensal acumulado
@@ -952,7 +951,6 @@ itau_retorno_mensal_acum = pd.concat([itau_ret_mensal_acum,
                                       fin_retorno_mensal_acum], axis=1)
 
 plot_retorno_mensal(itau_retorno_mensal_acum, "Itau Mensal Acumulado")
-# itau_retorno_mensal_acum.T.to_csv('itau_retorno_mensal_acum.csv')
 
 
 # %% graficos do bb mensal
@@ -962,7 +960,7 @@ bb_retorno_mensal = pd.concat([bb_ret_mensal,
                                fin_retorno_mensal], axis=1)
 
 plot_retorno_mensal(bb_retorno_mensal, "BB Mensal")
-# bb_retorno_mensal.T.to_csv('bb_retorno_mensal.csv')
+
 
 # %% graficos do bb mensal acumulado
 
@@ -971,7 +969,6 @@ bb_retorno_mensal_acum = pd.concat([bb_ret_mensal_acum,
                                     fin_retorno_mensal_acum], axis=1)
 
 plot_retorno_mensal(bb_retorno_mensal_acum, "BB Mensal Acumulado")
-# bb_retorno_mensal_acum.T.to_csv('bb_retorno_mensal_acum.csv')
 
 
 # %% analise e classiifção dos indicadores financeiros dos fundos
@@ -1024,27 +1021,8 @@ fundos_bb = cadastro[cadastro['DENOM_SOCIAL'].str.startswith('BB')]
 # %% meus fundos bb e itau
 
 
-ITAU = [
-    "05.523.348/0001-87",
-    "11.858.554/0001-40",
-    "39.303.195/0001-84",
-    "32.972.925/0001-90",
-    "35.650.636/0001-63",
-    "36.249.379/0001-15"
-]
-BB = [
-    "04.061.224/0001-64",
-    "05.962.491/0001-75",
-    "06.015.368/0001-00",
-    "13.322.192/0001-02",
-    "29.224.634/0001-00"
-]
-
 lm_fundo_bb = consulta_fundos_total(BB)
 lm_fundo_itau = consulta_fundos_total(ITAU)
-
-# lm_fundo_bb.to_csv('lm_fundo_bb.csv')
-# lm_fundo_itau.to_csv('lm_fundo_itau.csv')
 
 
 # %% seleciona analise de somente um fundo
@@ -1054,22 +1032,6 @@ fundo = ["11.858.554/0001-40"]  # 'Itaú Seleção MM'
 MM = consulta_fundos_valores_diarios(fundo)
 MM_ret_mensal, MM_ret_acum = retorno_mensal_df_valores(
     MM, data_inicio, data_fim)
-
-
-# %% seleciona analise de um indicador financeiro
-
-
-ativos = 189  # IGPM
-data_inicio = '2020-03-01'
-data_fim = '2021-02-28'
-
-igpm = consulta_bcb(ativos, data_inicio, data_fim)
-igpm_mes_acum = round((((1 + igpm / 100).cumprod()) - 1) * 100, 2)
-
-
-# ===============================================================================
-# %% TESTE APAGAR
-# ===============================================================================
 
 
 # %%
