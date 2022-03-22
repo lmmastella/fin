@@ -154,6 +154,48 @@ def consulta_cvm_cadastro():
     return cadastro
 
 
+def consulta_cvm_cadastro_completo():
+    """
+
+    Parameters
+    ----------
+    none
+
+    Returns
+    -------
+    Pandas DataFrame com os dados dos fundos
+
+    """
+
+    url = "http://dados.cvm.gov.br/dados/FI/CAD/DADOS/cad_fi.csv"
+
+    try:
+
+        cadastro = pd.read_csv(
+            url, sep=";", encoding="ISO-8859-1", dtype="unicode")
+
+    except:
+        print("Arquivo de dados não encontrado!")
+        print("Verificar URL da CVM")
+
+    # seleciona fundos em funcionamemto # problema com fundos encerrados
+    # cadastro = cadastro[
+    #     cadastro["SIT"].isin(
+    #         ["EM FUNCIONAMENTO NORMAL", "FASE PRÉ-OPERACIONAL"])
+    # ]
+
+    # seleciona as colunas nescessarias
+    # cadastro = cadastro.loc[
+    #     :, ["CNPJ_FUNDO", "DENOM_SOCIAL", "SIT", "TP_FUNDO", "CLASSE", "VL_PATRIM_LIQ"]
+    # ].set_index("CNPJ_FUNDO", drop=True)
+    cadastro.set_index("CNPJ_FUNDO", drop=True, inplace=True)
+
+    # retira duplicados
+    cadastro.drop_duplicates(inplace=True)
+
+    return cadastro
+
+
 # funcao  busca informes mensais na CVM
 
 def consulta_cvm_informes(data_inicio, data_fim):
@@ -766,6 +808,7 @@ data_fim = "2022-02-28"
 # %% consulta cadastro de fundos cvm com valores comerciais
 
 cadastro = consulta_cvm_cadastro()
+cadastro = consulta_cvm_cadastro_completo()
 # cadastro.to_csv('cadastro.csv')
 # cadastro = pd.read_csv('cadastro_fev22.csv').set_index('CNPJ_FUNDO')
 
@@ -1013,7 +1056,7 @@ itau_retorno_mensal = pd.concat([itau_ret_mensal,
                                  fin_retorno_mensal], axis=1)
 
 plot_retorno_mensal(itau_retorno_mensal, "Itau Mensal")
-# itau_retorno_mensal.T.to_csv('itau_retorno_mensal.csv')
+# itau_retorno_mensal.T.to_excel('itau_retorno_mensal.xlsx')
 
 
 # %% graficos do itau mensal acumulado
@@ -1023,7 +1066,7 @@ itau_retorno_mensal_acum = pd.concat([itau_ret_mensal_acum,
                                       fin_retorno_mensal_acum], axis=1)
 
 plot_retorno_mensal(itau_retorno_mensal_acum, "Itau Mensal Acumulado")
-# itau_retorno_mensal_acum.T.to_csv('itau_retorno_mensal_acum.csv')
+# itau_retorno_mensal_acum.T.to_excel('itau_retorno_mensal_acum.xlsx')
 
 
 # %% graficos do bb mensal
@@ -1033,7 +1076,7 @@ bb_retorno_mensal = pd.concat([bb_ret_mensal,
                                fin_retorno_mensal], axis=1)
 
 plot_retorno_mensal(bb_retorno_mensal, "BB Mensal")
-# bb_retorno_mensal.T.to_csv('bb_retorno_mensal.csv')
+# bb_retorno_mensal.T.to_excel('bb_retorno_mensal.xlsx')
 
 # %% graficos do bb mensal acumulado
 
@@ -1042,14 +1085,16 @@ bb_retorno_mensal_acum = pd.concat([bb_ret_mensal_acum,
                                     fin_retorno_mensal_acum], axis=1)
 
 plot_retorno_mensal(bb_retorno_mensal_acum, "BB Mensal Acumulado")
-# bb_retorno_mensal_acum.T.to_csv('bb_retorno_mensal_acum.csv')
+# bb_retorno_mensal_acum.T.to_excel('bb_retorno_mensal_acum.xlsx')
 
-
+###############################################################################
 # %% analise e classiifção dos indicadores financeiros dos fundos
+###############################################################################
 
+cadastro = consulta_cvm_cadastro_completo()
 
 melhores_fundos = classifica_fundos('melhores', 1000)
-piores_fundos = classifica_fundos('piores', 500)
+piores_fundos = classifica_fundos('piores',1000)
 # melhores_acoes = classifica_fundos('melhores', 100, classe='acoes')
 # piores_acoes = classifica_fundos('piores', 100, classe='acoes')
 melhores_rfixa = classifica_fundos('melhores', 100, classe='rendafixa')
@@ -1089,26 +1134,40 @@ piores_BB.to_csv('piores_bb.csv')
 fundos_itau = cadastro[cadastro['DENOM_SOCIAL'].str.startswith('ITAÚ')]
 fundos_bb = cadastro[cadastro['DENOM_SOCIAL'].str.startswith('BB')]
 
-# fundos_itau.to_csv('fundos_itau.csv')
-# fundos_bb.to_csv('fundos_bb.csv')
-
-
-
+###############################################################################
 # %% seleciona analise de somente um fundo
+###############################################################################
+
+# Atencao o df cadastro deve ser atualizado.
+# Nao utilizar o df cadastro gravado na pasta de dados
+
+fundo = ["05.523.348/0001-87"]
+
+fundo_diario = consulta_fundos_valores_diarios(fundo)
+fundo_ret_mensal,fundo_ret_acum = retorno_mensal_df_valores(
+    fundo_diario, data_inicio, data_fim)
+
+dados_fundo = consulta_fundos_total(fundo)
 
 
-# fundo = ["29.224.634/0001-00"]
-# MM = consulta_fundos_valores_diarios(fundo)
-# MM_ret_mensal, MM_ret_acum = retorno_mensal_df_valores(
-#     MM, data_inicio, data_fim)
+# %% seleciona analise de mais de um fundo
+
+
+fundos = [ "05.523.348/0001-87", "11.858.554/0001-40", "32.972.925/0001-90"]
+
+fundos_diario = consulta_fundos_valores_diarios(fundos)
+fundos_ret_mensal,fundos_ret_acum = retorno_mensal_df_valores(
+    fundos_diario, data_inicio, data_fim)
+
+dados_fundos = consulta_fundos_total(fundos)
 
 
 # %% consulta fundos totais
 
-
-# fundos_itau = consulta_fundos_total(ITAU)
-# fundos_bb = consulta_fundos_total(BB)
-
+fundos_itau = consulta_fundos_total(ITAU)
+fundos_bb = consulta_fundos_total(BB)
+total = ITAU + BB
+fundos_total = consulta_fundos_total(total)
 
 # ===============================================================================
 # %% TESTE APAGAR

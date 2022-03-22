@@ -3,11 +3,16 @@
 # %% teste de python
 
 from datetime import datetime
-from time import strftime
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pandas_datareader.data as web
+import plotly.graph_objects as go
+import plotly.offline as py
+import seaborn as sns
 
-pd.set_option('styler.render.repr', 'html')
+pd.options.plotting.backend = 'plotly'
 
 
 # %% consulta yahoo
@@ -115,9 +120,7 @@ ativos = ['^BVSP', '^DJI', '^GSPC']
 df = consulta_yahoo(ativos, data_inicio, data_fim)
 df.columns = ['Ibov', 'DowJones', 'S&P500']
 
-# utilizar para verificar
-df1 =  df.reset_index()
-
+df.to_excel('test.xlsx')
 
 # %% Retorno mensalizado
 
