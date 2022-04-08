@@ -799,7 +799,7 @@ def plot_retorno_mensal(df, nome):
 # %% Variaveis Opcao 1.a somente uprade
 today = datetime.today().strftime("%Y-%m-%d")
 data_inicio = "2021-01-01"
-data_fim = "2022-02-28"
+data_fim = "2022-03-31"
 
 # Opcao 2
 # ano = "2021"
@@ -808,16 +808,16 @@ data_fim = "2022-02-28"
 # %% consulta cadastro de fundos cvm com valores comerciais
 
 cadastro = consulta_cvm_cadastro()
-cadastro = consulta_cvm_cadastro_completo()
+# cadastro = consulta_cvm_cadastro_completo()
 # cadastro.to_csv('cadastro.csv')
-# cadastro = pd.read_csv('cadastro_fev22.csv').set_index('CNPJ_FUNDO')
+# cadastro = pd.read_csv('cadastro_mar22.csv').set_index('CNPJ_FUNDO')
 
 # %% Opcao 1
 # # consulta informes de fundos por periodo na cvm com valores de cotas
 
 informes = consulta_cvm_informes_upgrade(data_inicio, data_fim)
-# informes.to_csv('informes.csv')
-# informes = pd.read_csv('informes_fev22.csv').drop('Unnamed: 0', axis=1)
+# informes.to_csv('informes_mar22.csv')
+# informes = pd.read_csv('informes_mar22.csv').drop('Unnamed: 0', axis=1)
 
 
 # %% Variaveis Opcao 2
@@ -911,7 +911,8 @@ ITAU = [
     "39.303.195/0001-84",
     "32.972.925/0001-90",
     "35.650.636/0001-63",
-    "36.249.379/0001-15"
+    "36.249.379/0001-15",
+    "40.695.974/0001-51"
 ]
 ITAU_NAMES = [
     "Itaú Seleção MM",
@@ -920,6 +921,7 @@ ITAU_NAMES = [
     "Itaú Global Dinâmico RF LP",
     "Itaú Carteira",
     "Itaú Index SP500 USD"
+    "Giant Zarathustra"
 ]
 
 BB = [
