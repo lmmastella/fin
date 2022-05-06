@@ -284,6 +284,50 @@ def consulta_cvm_informes_upgrade(data_inicio, data_fim):
     return informe_upgrade
 
 
+def consulta_cvm_informes_zip(data_inicio, data_fim):
+    """
+
+    Parameters
+    ----------
+    data_inicio : data
+                  YYYY-MM
+
+    data_fim : data
+                  YYYY-MM
+
+    Returns
+    -------
+    Pandas DataFrame com as informacoes mensais de rendimento dos fundos
+    no periodo solitado
+
+    """
+
+    # datas de solicitacao dos arquivos
+    # datas = pd.date_range(data_inicio, data_fim, freq="MS")
+
+    # informe_completo = pd.DataFrame()
+    # for data in datas:
+    #     try:
+    #         url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip".format(
+    #             data.year, data.month)
+    #         informe_mensal = pd.read_csv(url, sep=";")
+
+    #     except:
+    #         print("Arquivo {} não encontrado!".format(url))
+    #         print("Forneça outra data!")
+
+    #     informe_completo = pd.concat(
+    #         [informe_completo, informe_mensal], ignore_index=True)
+
+    informes_mar22 = pd.read_csv('informes_mar22.csv').drop('Unnamed: 0', axis=1)
+    informes_abr22 = pd.read_csv('informes_abr22.csv', sep=";")
+    informe_upgrade = pd.concat(
+        [informes_mar22, informes_abr22], ignore_index=True)
+
+    return informe_upgrade
+
+
+
 # funcao dataset com informes mensais da cvm
 
 def consulta_cvm_informes_mes(ano, mes):
@@ -799,7 +843,7 @@ def plot_retorno_mensal(df, nome):
 # %% Variaveis Opcao 1.a somente uprade
 today = datetime.today().strftime("%Y-%m-%d")
 data_inicio = "2021-01-01"
-data_fim = "2022-03-31"
+data_fim = "2022-04-30"
 
 # Opcao 2
 # ano = "2021"
@@ -815,9 +859,9 @@ cadastro = consulta_cvm_cadastro()
 # %% Opcao 1
 # # consulta informes de fundos por periodo na cvm com valores de cotas
 
-informes = consulta_cvm_informes_upgrade(data_inicio, data_fim)
-# informes.to_csv('informes_mar22.csv')
-# informes = pd.read_csv('informes_mar22.csv').drop('Unnamed: 0', axis=1)
+informes = consulta_cvm_informes_zip(data_inicio, data_fim)
+# informes.to_csv('informes_abr22.csv')
+# informes = pd.read_csv('informes_abr22.csv').drop('Unnamed: 0', axis=1)
 
 
 # %% Variaveis Opcao 2
@@ -920,7 +964,7 @@ ITAU_NAMES = [
     "Itaú Kinea IPCA RF",
     "Itaú Global Dinâmico RF LP",
     "Itaú Carteira",
-    "Itaú Index SP500 USD"
+    "Itaú Index SP500 USD",
     "Giant Zarathustra"
 ]
 
@@ -976,7 +1020,7 @@ bb_ret_mensal, bb_ret_mensal_acum = retorno_mensal_df_valores(
     bb_diario, data_inicio, data_fim)
 
 
-# %% valores diarios NAO TEM UTILDADE
+# %% valores diarios
 
 
 valores_diarios = pd.concat([itau_diario, bb_diario,
@@ -1001,6 +1045,7 @@ indices_ret_diarios = indices_ret_diarios.fillna(
     axis=0, method='bfill').dropna()
 
 plot_retorno_diario(indices_ret_diarios, "diarios")
+# indices_ret_diarios.to_csv("indices_ret_diarios.csv")
 
 
 # %% indices de retornos diarios acumulados plot
@@ -1014,6 +1059,7 @@ indices_ret_diarios_acum = indices_ret_diarios_acum.fillna(
     axis=0, method='bfill').dropna()
 
 plot_retorno_diario(indices_ret_diarios_acum, "diarios acumulados")
+# indices_ret_diarios_acum.to_csv("indices_ret_diarios_acum.csv")
 
 
 # %% correlacoes valores diarios
@@ -1170,7 +1216,7 @@ fundos_itau = consulta_fundos_total(ITAU)
 fundos_bb = consulta_fundos_total(BB)
 total = ITAU + BB
 fundos_total = consulta_fundos_total(total)
-
+fundos_total.to_excel('fundos_total.xlsx')
 # ===============================================================================
 # %% TESTE APAGAR
 # ===============================================================================
