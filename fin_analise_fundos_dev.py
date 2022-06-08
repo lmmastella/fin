@@ -19,6 +19,7 @@ https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepara
 # %% import libraries
 
 from datetime import datetime
+from distutils.log import info
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -163,7 +164,7 @@ def consulta_cvm_cadastro_completo():
 
     Returns
     -------
-    Pandas DataFrame com os dados dos fundos
+    Pandas DataFrame com os dados dos fundos com todas as colunas
 
     """
 
@@ -178,16 +179,6 @@ def consulta_cvm_cadastro_completo():
         print("Arquivo de dados não encontrado!")
         print("Verificar URL da CVM")
 
-    # seleciona fundos em funcionamemto # problema com fundos encerrados
-    # cadastro = cadastro[
-    #     cadastro["SIT"].isin(
-    #         ["EM FUNCIONAMENTO NORMAL", "FASE PRÉ-OPERACIONAL"])
-    # ]
-
-    # seleciona as colunas nescessarias
-    # cadastro = cadastro.loc[
-    #     :, ["CNPJ_FUNDO", "DENOM_SOCIAL", "SIT", "TP_FUNDO", "CLASSE", "VL_PATRIM_LIQ"]
-    # ].set_index("CNPJ_FUNDO", drop=True)
     cadastro.set_index("CNPJ_FUNDO", drop=True, inplace=True)
 
     # retira duplicados
@@ -203,6 +194,8 @@ def consulta_cvm_informes(data_inicio, data_fim):
 
     Parameters
     ----------
+    ATENCAO - Deprecated - Arquivos na CVM estao zipados
+              Separacao de dados por virgula
     data_inicio : data
                   YYYY-MM
 
@@ -226,9 +219,9 @@ def consulta_cvm_informes(data_inicio, data_fim):
     informe_completo = pd.DataFrame()
     for data in datas:
         try:
-            url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.csv".format(
+            url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip".format(
                 data.year, data.month)
-            informe_mensal = pd.read_csv(url, sep=";")
+            informe_mensal = pd.read_csv(url, sep=",")
 
         except:
             print("Arquivo {} não encontrado!".format(url))
@@ -266,9 +259,9 @@ def consulta_cvm_informes_upgrade(data_inicio, data_fim):
     informe_completo = pd.DataFrame()
     for data in datas:
         try:
-            url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.csv".format(
+            url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip".format(
                 data.year, data.month)
-            informe_mensal = pd.read_csv(url, sep=";")
+            informe_mensal = pd.read_csv(url, sep=",")
 
         except:
             print("Arquivo {} não encontrado!".format(url))
@@ -284,11 +277,13 @@ def consulta_cvm_informes_upgrade(data_inicio, data_fim):
     return informe_upgrade
 
 
-def consulta_cvm_informes_zip(data_inicio, data_fim):
+def consulta_cvm_informes_zip():
     """
 
     Parameters
     ----------
+
+    ATENCAO - Acertar datas
     data_inicio : data
                   YYYY-MM
 
@@ -302,27 +297,11 @@ def consulta_cvm_informes_zip(data_inicio, data_fim):
 
     """
 
-    # datas de solicitacao dos arquivos
-    # datas = pd.date_range(data_inicio, data_fim, freq="MS")
 
-    # informe_completo = pd.DataFrame()
-    # for data in datas:
-    #     try:
-    #         url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip".format(
-    #             data.year, data.month)
-    #         informe_mensal = pd.read_csv(url, sep=";")
-
-    #     except:
-    #         print("Arquivo {} não encontrado!".format(url))
-    #         print("Forneça outra data!")
-
-    #     informe_completo = pd.concat(
-    #         [informe_completo, informe_mensal], ignore_index=True)
-
-    informes_mar22 = pd.read_csv('informes_mar22.csv').drop('Unnamed: 0', axis=1)
-    informes_abr22 = pd.read_csv('informes_abr22.csv', sep=";")
+    informes_abr22 = pd.read_csv('informes_abr22.csv').drop('Unnamed: 0', axis=1)
+    informes = pd.read_csv('informes.csv', sep=",")
     informe_upgrade = pd.concat(
-        [informes_mar22, informes_abr22], ignore_index=True)
+        [informes_abr22, informes], ignore_index=True)
 
     return informe_upgrade
 
@@ -345,7 +324,7 @@ def consulta_cvm_informes_mes(ano, mes):
     Pandas DataFrame com as informacoes mensais de rendimento dos fundos
     """
     try:
-        url = 'http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.csv'.format(
+        url = 'http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip'.format(
             ano, mes)
         return pd.read_csv(url, sep=';')
     except:
@@ -375,6 +354,7 @@ def consulta_fundos_total(cnpj):
 
     for cnpj in cnpj:
         fundo = informes[informes["CNPJ_FUNDO"] == cnpj].set_index("DT_COMPTC")
+        fundo = fundo.loc[data_inicio:data_fim]
         fundo = fundo["VL_QUOTA"] / fundo["VL_QUOTA"].iloc[0]
         fundos.loc[cnpj, "Retorno(%)"] = round((fundo.iloc[-1] - 1) * 100, 2)
         fundos.loc[cnpj, "Nome"] = [cadastro.loc[cnpj, "DENOM_SOCIAL"]]
@@ -843,7 +823,7 @@ def plot_retorno_mensal(df, nome):
 # %% Variaveis Opcao 1.a somente uprade
 today = datetime.today().strftime("%Y-%m-%d")
 data_inicio = "2021-01-01"
-data_fim = "2022-04-30"
+data_fim = "2022-05-31"
 
 # Opcao 2
 # ano = "2021"
@@ -854,22 +834,29 @@ data_fim = "2022-04-30"
 cadastro = consulta_cvm_cadastro()
 # cadastro = consulta_cvm_cadastro_completo()
 # cadastro.to_csv('cadastro.csv')
-# cadastro = pd.read_csv('cadastro_mar22.csv').set_index('CNPJ_FUNDO')
+# cadastro = pd.read_csv('cadastro.csv').set_index('CNPJ_FUNDO')
 
 # %% Opcao 1
 # # consulta informes de fundos por periodo na cvm com valores de cotas
 
-informes = consulta_cvm_informes_zip(data_inicio, data_fim)
-# informes.to_csv('informes_abr22.csv')
-# informes = pd.read_csv('informes_abr22.csv').drop('Unnamed: 0', axis=1)
+informes = consulta_cvm_informes(data_inicio, data_fim)
+# informes.to_csv('informes.csv')
+# informes = pd.read_csv('informes.csv').drop('Unnamed: 0', axis=1)
 
 
 # %% Variaveis Opcao 2
-# # consulta informe de fundos em determinado mes na cvm com valores de cotas
 
-# informes = consulta_cvm_informes_mes(2022, 2)
-# informes.to_csv('informes.csv')
-# informes = pd.read_csv('informes.csv').drop('Unnamed: 0', axis=1)
+# consulta informe de fundos em determinado mes na cvm com valores de cotas
+informes = consulta_cvm_informes_mes(2022, 5)
+informes.to_csv('informes.csv')
+
+# concatena arquivo mensal com informes diarios anterior no mesmo arquivo
+# informes_mes22 + informes (atual)
+informes = consulta_cvm_informes_zip()
+informes = informes.drop('Unnamed: 0', axis=1)
+
+# informes.to_csv('informes_mai22.csv')
+# informes = pd.read_csv('informes_mai22.csv').drop('Unnamed: 0', axis=1)
 
 
 # %% consulta dados da bolsa
@@ -1212,11 +1199,10 @@ dados_fundos = consulta_fundos_total(fundos)
 
 # %% consulta fundos totais
 
-fundos_itau = consulta_fundos_total(ITAU)
-fundos_bb = consulta_fundos_total(BB)
 total = ITAU + BB
 fundos_total = consulta_fundos_total(total)
 fundos_total.to_excel('fundos_total.xlsx')
+
 # ===============================================================================
 # %% TESTE APAGAR
 # ===============================================================================
