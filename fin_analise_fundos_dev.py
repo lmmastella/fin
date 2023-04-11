@@ -30,7 +30,6 @@ import seaborn as sns
 
 pd.options.plotting.backend = 'plotly'
 
-
 # funcao consulta banco central cdi codigo 12
 
 def consulta_bcb(codigo_bcb, data_inicio, data_fim):
@@ -220,7 +219,7 @@ def consulta_cvm_informes(data_inicio, data_fim):
         try:
             url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip".format(
                 data.year, data.month)
-            informe_mensal = pd.read_csv(url, sep=",")
+            informe_mensal = pd.read_csv(url, sep=";")
 
         except:
             print("Arquivo {} não encontrado!".format(url))
@@ -821,8 +820,8 @@ def plot_retorno_mensal(df, nome):
 
 # %% Variaveis Opcao 1.a somente uprade
 today = datetime.today().strftime("%Y-%m-%d")
-data_inicio = "2022-01-01"
-data_fim = "2022-01-31"
+data_inicio = "2023-03-01"
+data_fim = "2023-03-31"
 
 # Opcao 2
 # ano = "2021"
@@ -846,13 +845,13 @@ informes = consulta_cvm_informes(data_inicio, data_fim)
 # %% Variaveis Opcao 2
 
 # consulta informe de fundos em determinado mes na cvm com valores de cotas
-informes = consulta_cvm_informes_mes(2022, 5)
-informes.to_csv('informes.csv')
+# informes = consulta_cvm_informes_mes(2022, 5)
+# informes.to_csv('informes.csv')
 
 # concatena arquivo mensal com informes diarios anterior no mesmo arquivo
 # informes_mes22 + informes (atual)
-informes = consulta_cvm_informes_zip()
-informes = informes.drop('Unnamed: 0', axis=1)
+# informes = consulta_cvm_informes_zip()
+# informes = informes.drop('Unnamed: 0', axis=1)
 
 # informes.to_csv('informes_mai22.csv')
 # informes = pd.read_csv('informes_mai22.csv').drop('Unnamed: 0', axis=1)
@@ -861,8 +860,9 @@ informes = informes.drop('Unnamed: 0', axis=1)
 # %% consulta dados da bolsa
 
 ativos = ['^BVSP', '^DJI', '^GSPC']
-acoes_diario = consulta_yahoo(ativos, data_inicio, data_fim)
-acoes_diario.columns = ['Ibov', 'DowJones', 'S&P500']
+# acoes_diario = consulta_yahoo(ativos, data_inicio, data_fim)
+acoes_diario = consulta_yahoo(ativos, '2023-03-01', '2023-03-31')
+# acoes_diario.columns = ['Ibov', 'DowJones', 'S&P500']
 
 
 # %% Calculate daily returns
@@ -940,7 +940,6 @@ ITAU = [
     "11.858.554/0001-40",
     "39.303.195/0001-84",
     "32.972.925/0001-90",
-    "35.650.636/0001-63",
     "36.249.379/0001-15",
     "40.695.974/0001-51"
 ]
@@ -949,7 +948,6 @@ ITAU_NAMES = [
     "Itaú RF Mix Crédito Privado",
     "Itaú Kinea IPCA RF",
     "Itaú Global Dinâmico RF LP",
-    "Itaú Carteira",
     "Itaú Index SP500 USD",
     "Giant Zarathustra"
 ]
@@ -1205,6 +1203,29 @@ fundos_total.to_excel('fundos_total.xlsx')
 # ===============================================================================
 # %% TESTE APAGAR
 # ===============================================================================
+
+
+
+
+# %%
+
+from datetime import datetime
+import pandas as pd
+import pandas_datareader.data as pdr
+import yfinance as yf
+yf.pdr_override()
+
+data_inicio = "2023-03-01"
+data_fim = "2023-03-31"
+ativos = ('^BVSP ^DJI ^GSPC')
+
+data_inicio = pd.to_datetime(
+    data_inicio, format="%Y/%m/%d") - pd.DateOffset(months=1)
+data = pdr.get_data_yahoo('^GSPC',
+                          start=data_inicio,
+                          end=data_fim)[['Adj Close']]
+yf.download(ativos, start=data_inicio, end=data_fim)[['Adj Close']]
+df = yf.download(ativos, start=data_inicio, end=data_fim)[['Adj Close']]
 
 
 # %%
