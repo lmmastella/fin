@@ -23,7 +23,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pandas_datareader.data as web
+import pandas_datareader.data as pdr
 import plotly.graph_objects as go
 import plotly.offline as py
 import seaborn as sns
@@ -102,7 +102,7 @@ def consulta_yahoo(ativos, data_inicio, data_fim, col='Adj Close'):
     data_inicio = pd.to_datetime(
         data_inicio, format="%Y/%m/%d") - pd.DateOffset(months=1)
 
-    data = web.DataReader(ativos,
+    data = pdr.DataReader(ativos,
                           data_source='yahoo',
                           start=data_inicio,
                           end=data_fim)[[col]]
@@ -259,7 +259,7 @@ def consulta_cvm_informes_upgrade(data_inicio, data_fim):
         try:
             url = "http://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{}{:02d}.zip".format(
                 data.year, data.month)
-            informe_mensal = pd.read_csv(url, sep=",")
+            informe_mensal = pd.read_csv(url, sep=";")
 
         except:
             print("Arquivo {} não encontrado!".format(url))
@@ -268,9 +268,9 @@ def consulta_cvm_informes_upgrade(data_inicio, data_fim):
         informe_completo = pd.concat(
             [informe_completo, informe_mensal], ignore_index=True)
 
-    informes_2021 = pd.read_csv('informes_2021.csv').drop('Unnamed: 0', axis=1)
+    informes_2023 = pd.read_csv('informes_2023.csv').drop('Unnamed: 0', axis=1)
     informe_upgrade = pd.concat(
-        [informes_2021, informe_completo], ignore_index=True)
+        [informes_2023, informe_completo], ignore_index=True)
 
     return informe_upgrade
 
@@ -751,7 +751,7 @@ def plot_retorno_diario(df, nome):
 
     fig.add_traces(traces)
     fig.update_layout(
-        title="Retornos dos fundos " + nome + " no ano de 2021",
+        title="Retornos dos fundos " + nome + " no ano de 2023",
         legend_orientation="h",
         autosize=True,
         height=700,
@@ -806,7 +806,7 @@ def plot_retorno_mensal(df, nome):
     fig.add_traces(traces)
 
     fig.update_layout(
-        title="Retornos dos fundos " + nome + " no ano de 2021",
+        title="Retornos dos fundos " + nome + " no ano de 2023",
         legend_orientation="h",
         autosize=True,
         height=700,
@@ -820,7 +820,7 @@ def plot_retorno_mensal(df, nome):
 
 # %% Variaveis Opcao 1.a somente uprade
 today = datetime.today().strftime("%Y-%m-%d")
-data_inicio = "2023-03-01"
+data_inicio = "2023-01-01"
 data_fim = "2023-03-31"
 
 # Opcao 2
@@ -858,8 +858,10 @@ informes = consulta_cvm_informes(data_inicio, data_fim)
 
 
 # %% consulta dados da bolsa
+# TODO - bug no yfinance verificar no final
 
-ativos = ['^BVSP', '^DJI', '^GSPC']
+ativos = ['^BVSP']
+# ativos = ['^BVSP', '^DJI', '^GSPC']
 # acoes_diario = consulta_yahoo(ativos, data_inicio, data_fim)
 acoes_diario = consulta_yahoo(ativos, '2023-03-01', '2023-03-31')
 # acoes_diario.columns = ['Ibov', 'DowJones', 'S&P500']
@@ -938,18 +940,22 @@ ipca_ret_mensal_acum = round(
 ITAU = [
     "05.523.348/0001-87",
     "11.858.554/0001-40",
+    "28.280.961/0001-16",
     "39.303.195/0001-84",
     "32.972.925/0001-90",
     "36.249.379/0001-15",
-    "40.695.974/0001-51"
+    "40.695.974/0001-51",
+    "42.814.885/0001-02"
 ]
 ITAU_NAMES = [
     "Itaú Seleção MM",
     "Itaú RF Mix Crédito Privado",
+    "Absolute Hedge MM",
     "Itaú Kinea IPCA RF",
     "Itaú Global Dinâmico RF LP",
     "Itaú Index SP500 USD",
-    "Giant Zarathustra"
+    "Giant Zarathustra",
+    "Absolute Hiker RF"
 ]
 
 BB = [
@@ -958,6 +964,7 @@ BB = [
     "06.015.368/0001-00",
     "13.322.192/0001-02",
     "29.224.634/0001-00"
+
 ]
 BB_NAMES = [
     "BB RF DI LP VIP",
@@ -1123,7 +1130,8 @@ plot_retorno_mensal(bb_retorno_mensal_acum, "BB Mensal Acumulado")
 # %% analise e classiifção dos indicadores financeiros dos fundos
 ###############################################################################
 
-cadastro = consulta_cvm_cadastro_completo()
+# Se ocorrer erro - consultar cadastro completop na CVM
+# cadastro = consulta_cvm_cadastro_completo()
 
 melhores_fundos = classifica_fundos('melhores', 1000)
 piores_fundos = classifica_fundos('piores',1000)
@@ -1207,25 +1215,25 @@ fundos_total.to_excel('fundos_total.xlsx')
 
 
 
-# %%
+# %% funcao provisoria devido ao bug ni=o yfinance
 
-from datetime import datetime
-import pandas as pd
+
 import pandas_datareader.data as pdr
 import yfinance as yf
 yf.pdr_override()
 
-data_inicio = "2023-03-01"
-data_fim = "2023-03-31"
-ativos = ('^BVSP ^DJI ^GSPC')
+ativos = '^BVSP'
+# ativos = ('^BVSP ^DJI ^GSPC')
 
 data_inicio = pd.to_datetime(
     data_inicio, format="%Y/%m/%d") - pd.DateOffset(months=1)
-data = pdr.get_data_yahoo('^GSPC',
+acoes_diario = pdr.get_data_yahoo(ativos,
                           start=data_inicio,
                           end=data_fim)[['Adj Close']]
-yf.download(ativos, start=data_inicio, end=data_fim)[['Adj Close']]
-df = yf.download(ativos, start=data_inicio, end=data_fim)[['Adj Close']]
+
+acoes_diario.columns = ['Ibov']
+# s
+# df = yf.download(ativos, start=data_inicio, end=data_fim)[['Adj Close']]
 
 
 # %%
