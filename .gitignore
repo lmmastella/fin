@@ -1,10 +1,12 @@
 /.DS_Store
 /.vscode
+/images
 /cadastro.csv
 /cadastro_2021.csv
 /informes.csv
 /informes_2021.csv
 /informes_abr22.csv
 /cadastro_abr22.csv
+/tickers_ibra.csv
 /*.csv
 /teste.py
